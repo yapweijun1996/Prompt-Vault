@@ -24,11 +24,40 @@ const App: React.FC = () => {
     setIsLoading(true);
     try {
       await db.initDB();
-      const allPrompts = await db.getAllPrompts();
+      let allPrompts = await db.getAllPrompts();
+
+      // 如果数据库为空，尝试从 prompts.json 加载默认提示
+      if (allPrompts.length === 0) {
+        try {
+          const response = await fetch('/prompts.json');
+          if (response.ok) {
+            const defaultPrompts: PromptTemplate[] = await response.json();
+            
+            for (const prompt of defaultPrompts) {
+              // 在保存到数据库前，移除 id 和时间戳，确保它们被当作新条目创建
+              const { id, createdAt, updatedAt, ...promptToSave } = prompt;
+              await db.savePrompt(promptToSave);
+            }
+            
+            addToast(`已加载 ${defaultPrompts.length} 个默认提示模板。`, "success");
+            
+            // 从数据库重新加载提示
+            allPrompts = await db.getAllPrompts();
+          } else {
+            if (response.status !== 404) {
+              console.warn(`获取 prompts.json 失败: ${response.statusText}`);
+            }
+          }
+        } catch (fetchError) {
+          // 如果 fetch 失败（例如网络错误），也是正常的，静默处理
+          console.info("无法从 prompts.json 加载默认提示模板", fetchError);
+        }
+      }
+
       setPrompts(allPrompts.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
     } catch (error) {
-      console.error("Failed to load prompts:", error);
-      addToast("Failed to load prompts from the database.", "error");
+      console.error("加载提示失败:", error);
+      addToast("从数据库加载提示失败。", "error");
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +81,7 @@ const App: React.FC = () => {
     try {
       await db.savePrompt(promptToSave);
       await loadPrompts();
-      // If it was a new prompt, find its new ID and select it
+      // 如果是新提示，找到它的 ID 并选中
       if (!promptToSave.id) {
         const allPrompts = await db.getAllPrompts();
         const saved = allPrompts.find(p => p.title === promptToSave.title && p.content === promptToSave.content);
@@ -62,8 +91,8 @@ const App: React.FC = () => {
       }
       setIsNewPrompt(false);
     } catch (error) {
-      console.error("Failed to save prompt:", error);
-      addToast("Failed to save the prompt.", "error");
+      console.error("保存提示失败:", error);
+      addToast("保存提示失败。", "error");
     }
   }, [loadPrompts, addToast]);
   
@@ -76,18 +105,18 @@ const App: React.FC = () => {
 
     try {
       await db.deletePrompt(deleteConfirmationId);
-      // If the deleted prompt was the one being viewed, reset the view.
+      // 如果删除的是当前正在查看的提示，则重置视图
       if (selectedPromptId === deleteConfirmationId) {
         setSelectedPromptId(null);
         setIsNewPrompt(false);
       }
-      setDeleteConfirmationId(null); // Close modal
+      setDeleteConfirmationId(null); // 关闭模态框
       await loadPrompts();
-      addToast("Prompt deleted successfully.", "success");
+      addToast("提示已成功删除。", "success");
     } catch (error) {
-      console.error("Failed to delete prompt:", error);
-      addToast("Failed to delete prompt.", "error");
-      setDeleteConfirmationId(null); // Close modal on error too
+      console.error("删除提示失败:", error);
+      addToast("删除提示失败。", "error");
+      setDeleteConfirmationId(null); // 出错时也关闭模态框
     }
   }, [deleteConfirmationId, selectedPromptId, loadPrompts, addToast]);
 
@@ -104,8 +133,8 @@ const App: React.FC = () => {
       linkElement.setAttribute('download', exportFileDefaultName);
       linkElement.click();
     } catch (error) {
-      console.error("Failed to export prompts:", error);
-      addToast("Failed to export prompts as JSON.", "error");
+      console.error("导出提示失败:", error);
+      addToast("导出为 JSON 失败。", "error");
     }
   };
 
@@ -125,14 +154,14 @@ const App: React.FC = () => {
           await db.savePrompt(promptWithoutId);
         }
         await loadPrompts();
-        addToast(`${importedPrompts.length} prompts imported successfully!`, 'success');
+        addToast(`成功导入 ${importedPrompts.length} 个提示！`, 'success');
       } catch (error) {
-        console.error("Failed to import prompts:", error);
-        addToast("Failed to import prompts. Please check the file format.", "error");
+        console.error("导入提示失败:", error);
+        addToast("导入失败。请检查文件格式。", "error");
       }
     };
     reader.readAsText(file);
-    event.target.value = ''; // Reset file input
+    event.target.value = ''; // 重置文件输入
   };
     
   const handleExportHtml = async () => {
@@ -149,8 +178,8 @@ const App: React.FC = () => {
       document.body.removeChild(linkElement);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Failed to export HTML:", error);
-      addToast("Failed to export prompts as HTML.", "error");
+      console.error("导出 HTML 失败:", error);
+      addToast("导出为 HTML 失败。", "error");
     }
   };
 
@@ -186,7 +215,7 @@ const App: React.FC = () => {
           <div className="p-4 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
               <input
                   type="text"
-                  placeholder="Search prompts..."
+                  placeholder="搜索提示..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -194,7 +223,7 @@ const App: React.FC = () => {
           </div>
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
-              <p>Loading prompts...</p>
+              <p>正在加载提示...</p>
             </div>
           ) : (
             <PromptList
@@ -221,8 +250,8 @@ const App: React.FC = () => {
         isOpen={deleteConfirmationId !== null}
         onClose={() => setDeleteConfirmationId(null)}
         onConfirm={handleConfirmDelete}
-        title="Delete Prompt"
-        message="Are you sure you want to delete this prompt? This action cannot be undone."
+        title="删除提示"
+        message="您确定要删除此提示吗？此操作无法撤销。"
       />
     </div>
   );

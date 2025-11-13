@@ -1,0 +1,26 @@
+[
+  {
+    "title": "生成 React 组件",
+    "category": "代码生成",
+    "tags": ["react", "typescript", "frontend"],
+    "content": "请使用 TypeScript 生成一个名为 '{{ComponentName}}' 的 React 函数式组件。\n\n它应该接受以下 props：\n- {{propName}}: {{propType}} (例如：'name: string')\n\n组件应该渲染一个简单的 div 来显示传入的 props。\n\n请遵循可读性和性能的最佳实践。"
+  },
+  {
+    "title": "总结技术文章",
+    "category": "内容总结",
+    "tags": ["summary", "technical writing", "nlp"],
+    "content": "请将以下技术文章总结成一个简洁的段落，并附上 3-5 个关键要点。总结内容应能让对该主题有基本了解的人看懂。\n\n文章：\n---\n{{article_text}}\n---"
+  },
+  {
+    "title": "编写 Git 提交信息",
+    "category": "开发者工具",
+    "tags": ["git", "version control", "conventional commits"],
+    "content": "请为以下变更编写一条遵循 Conventional Commits 规范的 Git 提交信息。\n\n变更类型: (例如：feat, fix, chore, docs)\n范围: (例如：auth, api, ui)\n变更描述：\n---\n{{changes}}\n---"
+  },
+  {
+    "title": "构思博客文章创意",
+    "category": "创意写作",
+    "tags": ["blogging", "content creation", "ideation"],
+    "content": "请围绕 '{{topic}}' 这个主题构思 5 个博客文章标题。标题需要吸引人、对 SEO 友好，并面向 {{target_audience}} 的读者群体。"
+  }
+]

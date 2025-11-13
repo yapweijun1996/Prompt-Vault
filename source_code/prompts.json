@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Code Refactor into Smaller",
+    "category": "Code Refactor",
+    "tags": [
+      "Refactor",
+      "300",
+      "lines"
+    ],
+    "content": "Hey, I’d like to start a structural refactor pass for the code, without changing any behavior.\n\nThe main problem now is that some JS/TS files are very big and mix many concerns (parsing, agent logic, UI updates), which makes it risky to change and hard to debug.\n\nWhat I’d like you to do first:\n\n1. Scan the repo for .js / .ts files with more than ~300 lines (treat 300+ as a red flag) and list the top ~10 biggest files.\n2. For each of those, note what it’s mixing (for example: data parsing + cleaning + planning + UI).\n3. Take the worst 2–3 files and refactor them into smaller, responsibility-focused modules. Example splits:\n\n   * data parsing\n   * data cleaning (executing cleaning plans)\n   * analysis planning\n   * card execution (aggregations / metrics)\n   * agent orchestration (ReAct loop)\n   * plus utilities vs UI rendering\n\nImportant constraints:\n\n* This should be behavior-preserving: no feature changes on purpose.\n* Keep existing public APIs as stable as possible.\n* Prefer one clear responsibility per file, no UI imports inside core/agent logic, and avoid circular dependencies.\n\nLet’s start with the biggest 2–3 files first, get them into a cleaner structure, and then iterate from there.\n",
+    "createdAt": "2025-11-13T04:55:19.744Z",
+    "updatedAt": "2025-11-13T04:55:19.744Z",
+    "id": 1
+  },
+  {
+    "title": "SVG Icon Refactoring",
+    "category": "Code Refactoring",
+    "tags": [
+      "SVG",
+      "icons",
+      "React",
+      "code cleanup"
+    ],
+    "content": "I'd like to clean up our SVG icon usage across the codebase.\nCurrently, SVGs are often inlined within components or grouped into large shared files, making them hard to reuse and maintain. My goal is to establish a structure where each icon lives in its own dedicated file.\n\n## What I’d like you to do\n- Scan the codebase for SVG usage:\n    - Inline `<svg>` elements inside React components.\n    - Any shared SVG files that contain multiple icons.\n- Refactor to \"one icon = one file\" principle:\n    - Create a dedicated folder, for example: `src/icons/`\n    - For each logical icon, create a separate file, e.g.:\n        - `IconAdd.tsx` or `icon-add.svg`\n        - `IconEdit.tsx` or `icon-edit.svg`\n        - `IconTrash.tsx` or `icon-trash.svg`\n    - Each file should contain only that single icon (no icon packs in one file).\n- Update all usages:\n    - Replace inline SVGs or references to old combined files with imports from the new per-icon files.\n    - Example (if using React components):\n        ```typescript\n        import { IconAdd } from \"@/icons/IconAdd\";\n        // ...\n        <IconAdd />\n        ```\n\n## Constraints / preferences\n- Ensure no visual changes to the icons; they must look exactly the same.\n- Keep naming consistent and predictable (e.g., `IconName` for components or `icon-name.svg` for raw SVG files).\n- Avoid creating new \"mega\" icon files; strictly adhere to the one-icon-per-file pattern.\n\nLet’s start with the most commonly used icons first, get the pattern right, and then migrate the rest.",
+    "createdAt": "2025-11-13T04:55:19.745Z",
+    "updatedAt": "2025-11-13T04:55:51.821Z",
+    "id": 2
+  }
+]
