@@ -1,28 +1,173 @@
 
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prompt Vault</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Vault - Static Export</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
-<link rel="stylesheet" href="/index.css">
-  <script type="importmap">
-{
-  "imports": {
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^0.14.0/dist/index.js",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
-  }
-}
-</script>
-  <script type="module" crossorigin src="/assets/index-BKQSnz5W.js"></script>
+    <style>
+        .prompt-card:target {
+            border-color: #0ea5e9; /* sky-500 */
+            box-shadow: 0 0 0 2px #0ea5e9;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        .prompt-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, margin-bottom 0.4s ease-in-out;
+            margin-bottom: 0;
+        }
+        .prompt-content.show {
+            max-height: 2000px; /* A large enough value to not clip content */
+            margin-bottom: 1rem; /* mb-4 */
+        }
+    </style>
 </head>
-  <body class="bg-slate-900 text-slate-200">
-    <div id="root"></div>
-  </body>
+<body class="bg-slate-900 text-slate-200 font-sans">
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-white mb-2">Prompt Vault</h1>
+            <p class="text-slate-400">A read-only collection of prompt templates.</p>
+        </header>
+
+        <div class="sticky top-0 bg-slate-900 py-4 z-10 mb-8">
+            <input type="text" id="search-input" placeholder="Search prompts..." class="w-full bg-slate-800 border border-slate-700 rounded-md px-4 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500">
+        </div>
+
+        <main id="prompt-list" class="grid grid-cols-1 gap-6">
+            <!-- Prompts will be rendered here -->
+        </main>
+    </div>
+
+    <script type="application/json" id="prompt-data">
+        [
+  {
+    "title": "Code Refactor into Smaller",
+    "category": "Code Refactor",
+    "tags": [
+      "Refactor",
+      "300",
+      "lines"
+    ],
+    "content": "Hey, I’d like to start a structural refactor pass for the code, without changing any behavior.\n\nThe main problem now is that some JS/TS files are very big and mix many concerns (parsing, agent logic, UI updates), which makes it risky to change and hard to debug.\n\nWhat I’d like you to do first:\n\n1. Scan the repo for .js / .ts files with more than ~300 lines (treat 300+ as a red flag) and list the top ~10 biggest files.\n2. For each of those, note what it’s mixing (for example: data parsing + cleaning + planning + UI).\n3. Take the worst 2–3 files and refactor them into smaller, responsibility-focused modules. Example splits:\n\n   * data parsing\n   * data cleaning (executing cleaning plans)\n   * analysis planning\n   * card execution (aggregations / metrics)\n   * agent orchestration (ReAct loop)\n   * plus utilities vs UI rendering\n\nImportant constraints:\n\n* This should be behavior-preserving: no feature changes on purpose.\n* Keep existing public APIs as stable as possible.\n* Prefer one clear responsibility per file, no UI imports inside core/agent logic, and avoid circular dependencies.\n\nLet’s start with the biggest 2–3 files first, get them into a cleaner structure, and then iterate from there.\n",
+    "createdAt": "2025-11-13T05:16:45.250Z",
+    "updatedAt": "2025-11-13T05:16:45.250Z",
+    "id": 5
+  },
+  {
+    "title": "SVG Icon Refactoring",
+    "category": "Code Refactoring",
+    "tags": [
+      "SVG",
+      "icons",
+      "React",
+      "code cleanup"
+    ],
+    "content": "I'd like to clean up our SVG icon usage across the codebase.\nCurrently, SVGs are often inlined within components or grouped into large shared files, making them hard to reuse and maintain. My goal is to establish a structure where each icon lives in its own dedicated file.\n\n## What I’d like you to do\n- Scan the codebase for SVG usage:\n    - Inline `<svg>` elements inside React components.\n    - Any shared SVG files that contain multiple icons.\n- Refactor to \"one icon = one file\" principle:\n    - Create a dedicated folder, for example: `src/icons/`\n    - For each logical icon, create a separate file, e.g.:\n        - `IconAdd.tsx` or `icon-add.svg`\n        - `IconEdit.tsx` or `icon-edit.svg`\n        - `IconTrash.tsx` or `icon-trash.svg`\n    - Each file should contain only that single icon (no icon packs in one file).\n- Update all usages:\n    - Replace inline SVGs or references to old combined files with imports from the new per-icon files.\n    - Example (if using React components):\n        ```typescript\n        import { IconAdd } from \"@/icons/IconAdd\";\n        // ...\n        <IconAdd />\n        ```\n\n## Constraints / preferences\n- Ensure no visual changes to the icons; they must look exactly the same.\n- Keep naming consistent and predictable (e.g., `IconName` for components or `icon-name.svg` for raw SVG files).\n- Avoid creating new \"mega\" icon files; strictly adhere to the one-icon-per-file pattern.\n\nLet’s start with the most commonly used icons first, get the pattern right, and then migrate the rest.",
+    "createdAt": "2025-11-13T05:16:45.250Z",
+    "updatedAt": "2025-11-13T05:16:45.250Z",
+    "id": 6
+  }
+]
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const prompts = JSON.parse(document.getElementById('prompt-data').textContent);
+            const promptList = document.getElementById('prompt-list');
+            const searchInput = document.getElementById('search-input');
+
+            const renderPrompts = (promptsToRender) => {
+                if (!promptsToRender.length) {
+                    promptList.innerHTML = '<p class="text-slate-500">No prompts found.</p>';
+                    return;
+                }
+
+                promptList.innerHTML = promptsToRender.map(prompt => `
+                    <div id="prompt-${prompt.id}" class="prompt-card bg-slate-800 rounded-lg border border-slate-700 p-6 transition duration-300 ease-in-out">
+                        <div class="flex justify-between items-start gap-4 mb-4">
+                            <div class="flex-grow">
+                                <h2 class="text-xl font-semibold text-white">${prompt.title}</h2>
+                                <p class="text-sm text-sky-400">${prompt.category || 'Uncategorized'}</p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button onclick="togglePrompt(this, 'prompt-content-${prompt.id}')" class="toggle-btn bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
+                                    Show
+                                </button>
+                                <button onclick="copyToClipboard(this, `${btoa(encodeURIComponent(prompt.content))}`)" class="copy-btn bg-slate-700 hover:bg-sky-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div id="prompt-content-${prompt.id}" class="prompt-content prose prose-invert prose-sm max-w-none text-slate-300">
+                            <pre class="bg-slate-900/70 p-4 rounded-md whitespace-pre-wrap font-mono"><code>${escapeHtml(prompt.content)}</code></pre>
+                        </div>
+                        ${prompt.tags && prompt.tags.length > 0 ? `
+                        <div class="flex flex-wrap gap-2">
+                            ${prompt.tags.map(tag => `<span class="bg-slate-700 text-slate-300 text-xs font-medium px-2.5 py-1 rounded-full">${tag}</span>`).join('')}
+                        </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            };
+
+            const filterPrompts = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filtered = prompts.filter(prompt =>
+                    prompt.title.toLowerCase().includes(searchTerm) ||
+                    prompt.category.toLowerCase().includes(searchTerm) ||
+                    prompt.content.toLowerCase().includes(searchTerm) ||
+                    prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+                renderPrompts(filtered);
+            };
+
+            window.togglePrompt = (button, contentId) => {
+                const content = document.getElementById(contentId);
+                if (content) {
+                    content.classList.toggle('show');
+                    if (content.classList.contains('show')) {
+                        button.textContent = 'Hide';
+                    } else {
+                        button.textContent = 'Show';
+                    }
+                }
+            };
+
+            window.copyToClipboard = (button, base64Content) => {
+                try {
+                    const content = decodeURIComponent(atob(base64Content));
+                    navigator.clipboard.writeText(content).then(() => {
+                        button.textContent = 'Copied!';
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                        }, 2000);
+                    }, () => {
+                        alert('Failed to copy');
+                    });
+                } catch (e) {
+                    console.error('Error decoding content:', e);
+                    alert('Failed to copy due to a decoding error.');
+                }
+            };
+            
+            window.escapeHtml = (unsafe) => {
+                return unsafe
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
+            }
+
+            searchInput.addEventListener('input', filterPrompts);
+            
+            renderPrompts(prompts);
+        });
+    </script>
+</body>
 </html>
+  
