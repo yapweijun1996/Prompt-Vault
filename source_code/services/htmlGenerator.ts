@@ -57,49 +57,16 @@ export const generateStaticHTML = (prompts: PromptTemplate[]): string => {
             const promptList = document.getElementById('prompt-list');
             const searchInput = document.getElementById('search-input');
 
-            const renderPrompts = (promptsToRender) => {
-                if (!promptsToRender.length) {
-                    promptList.innerHTML = '<p class="text-slate-500">No prompts found.</p>';
-                    return;
+            const escapeHtml = (unsafe) => {
+                if (typeof unsafe !== 'string') {
+                    return '';
                 }
-
-                promptList.innerHTML = promptsToRender.map(prompt => \`
-                    <div id="prompt-\${prompt.id}" class="prompt-card bg-slate-800 rounded-lg border border-slate-700 p-6 transition duration-300 ease-in-out">
-                        <div class="flex justify-between items-start gap-4 mb-4">
-                            <div class="flex-grow">
-                                <h2 class="text-xl font-semibold text-white">\${prompt.title}</h2>
-                                <p class="text-sm text-sky-400">\${prompt.category || 'Uncategorized'}</p>
-                            </div>
-                            <div class="flex items-center gap-2 flex-shrink-0">
-                                <button onclick="togglePrompt(this, 'prompt-content-\${prompt.id}')" class="toggle-btn bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
-                                    Show
-                                </button>
-                                <button onclick="copyToClipboard(this, \`\${btoa(encodeURIComponent(prompt.content))}\`)" class="copy-btn bg-slate-700 hover:bg-sky-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
-                                    Copy
-                                </button>
-                            </div>
-                        </div>
-                        <div id="prompt-content-\${prompt.id}" class="prompt-content prose prose-invert prose-sm max-w-none text-slate-300">
-                            <pre class="bg-slate-900/70 p-4 rounded-md whitespace-pre-wrap font-mono"><code>\${escapeHtml(prompt.content)}</code></pre>
-                        </div>
-                        \${prompt.tags && prompt.tags.length > 0 ? \`
-                        <div class="flex flex-wrap gap-2">
-                            \${prompt.tags.map(tag => \`<span class="bg-slate-700 text-slate-300 text-xs font-medium px-2.5 py-1 rounded-full">\${tag}</span>\`).join('')}
-                        </div>
-                        \` : ''}
-                    </div>
-                \`).join('');
-            };
-
-            const filterPrompts = () => {
-                const searchTerm = searchInput.value.toLowerCase();
-                const filtered = prompts.filter(prompt =>
-                    prompt.title.toLowerCase().includes(searchTerm) ||
-                    prompt.category.toLowerCase().includes(searchTerm) ||
-                    prompt.content.toLowerCase().includes(searchTerm) ||
-                    prompt.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-                );
-                renderPrompts(filtered);
+                return unsafe
+                     .replace(/&/g, "&amp;")
+                     .replace(/</g, "&lt;")
+                     .replace(/>/g, "&gt;")
+                     .replace(/"/g, "&quot;")
+                     .replace(/'/g, "&#039;");
             };
 
             window.togglePrompt = (button, contentId) => {
@@ -114,7 +81,9 @@ export const generateStaticHTML = (prompts: PromptTemplate[]): string => {
                 }
             };
 
-            window.copyToClipboard = (button, base64Content) => {
+            window.copyToClipboard = (button) => {
+                const base64Content = button.dataset.b64Content;
+                if (!base64Content) return;
                 try {
                     const content = decodeURIComponent(atob(base64Content));
                     navigator.clipboard.writeText(content).then(() => {
@@ -131,14 +100,50 @@ export const generateStaticHTML = (prompts: PromptTemplate[]): string => {
                 }
             };
             
-            window.escapeHtml = (unsafe) => {
-                return unsafe
-                     .replace(/&/g, "&amp;")
-                     .replace(/</g, "&lt;")
-                     .replace(/>/g, "&gt;")
-                     .replace(/"/g, "&quot;")
-                     .replace(/'/g, "&#039;");
-            }
+            const renderPrompts = (promptsToRender) => {
+                if (!promptsToRender.length) {
+                    promptList.innerHTML = '<p class="text-slate-500">No prompts found.</p>';
+                    return;
+                }
+
+                promptList.innerHTML = promptsToRender.map(prompt => \`
+                    <div id="prompt-\${prompt.id}" class="prompt-card bg-slate-800 rounded-lg border border-slate-700 p-6 transition duration-300 ease-in-out">
+                        <div class="flex justify-between items-start gap-4 mb-4">
+                            <div class="flex-grow">
+                                <h2 class="text-xl font-semibold text-white">\${escapeHtml(prompt.title)}</h2>
+                                <p class="text-sm text-sky-400">\${escapeHtml(prompt.category || 'Uncategorized')}</p>
+                            </div>
+                            <div class="flex items-center gap-2 flex-shrink-0">
+                                <button onclick="togglePrompt(this, 'prompt-content-\${prompt.id}')" class="toggle-btn bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
+                                    Show
+                                </button>
+                                <button data-b64-content="\${btoa(encodeURIComponent(prompt.content || ''))}" onclick="copyToClipboard(this)" class="copy-btn bg-slate-700 hover:bg-sky-600 text-slate-300 hover:text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200">
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div id="prompt-content-\${prompt.id}" class="prompt-content prose prose-invert prose-sm max-w-none text-slate-300">
+                            <pre class="bg-slate-900/70 p-4 rounded-md whitespace-pre-wrap font-mono"><code>\${escapeHtml(prompt.content)}</code></pre>
+                        </div>
+                        \${prompt.tags && prompt.tags.length > 0 ? \`
+                        <div class="flex flex-wrap gap-2">
+                            \${prompt.tags.map(tag => \`<span class="bg-slate-700 text-slate-300 text-xs font-medium px-2.5 py-1 rounded-full">\${escapeHtml(tag)}</span>\`).join('')}
+                        </div>
+                        \` : ''}
+                    </div>
+                \`).join('');
+            };
+
+            const filterPrompts = () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const filtered = prompts.filter(prompt =>
+                    (prompt.title || '').toLowerCase().includes(searchTerm) ||
+                    (prompt.category || '').toLowerCase().includes(searchTerm) ||
+                    (prompt.content || '').toLowerCase().includes(searchTerm) ||
+                    (prompt.tags || []).some(tag => tag.toLowerCase().includes(searchTerm))
+                );
+                renderPrompts(filtered);
+            };
 
             searchInput.addEventListener('input', filterPrompts);
             
