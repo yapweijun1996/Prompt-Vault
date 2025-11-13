@@ -1,0 +1,5 @@
+{
+  "name": "Prompt Vault",
+  "description": "A local-first tool to store, manage, and share your prompt templates. All data is stored in your browser using IndexedDB. You can easily import/export your collection as JSON or publish a read-only version as a static HTML file.",
+  "requestFramePermissions": []
+}
