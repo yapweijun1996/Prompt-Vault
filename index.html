@@ -53,8 +53,8 @@
       "lines"
     ],
     "content": "Hey, I’d like to start a structural refactor pass for the code, without changing any behavior.\n\nThe main problem now is that some JS/TS files are very big and mix many concerns (parsing, agent logic, UI updates), which makes it risky to change and hard to debug.\n\nWhat I’d like you to do first:\n\n1. Scan the repo for .js / .ts files with more than ~300 lines (treat 300+ as a red flag) and list the top ~10 biggest files.\n2. For each of those, note what it’s mixing (for example: data parsing + cleaning + planning + UI).\n3. Take the worst 2–3 files and refactor them into smaller, responsibility-focused modules. Example splits:\n\n   * data parsing\n   * data cleaning (executing cleaning plans)\n   * analysis planning\n   * card execution (aggregations / metrics)\n   * agent orchestration (ReAct loop)\n   * plus utilities vs UI rendering\n\nImportant constraints:\n\n* This should be behavior-preserving: no feature changes on purpose.\n* Keep existing public APIs as stable as possible.\n* Prefer one clear responsibility per file, no UI imports inside core/agent logic, and avoid circular dependencies.\n\nLet’s start with the biggest 2–3 files first, get them into a cleaner structure, and then iterate from there.\n",
-    "createdAt": "2025-11-13T05:20:08.590Z",
-    "updatedAt": "2025-11-13T05:20:08.590Z",
+    "createdAt": "2025-11-13T08:17:38.156Z",
+    "updatedAt": "2025-11-13T08:17:38.156Z",
     "id": 1
   },
   {
@@ -67,9 +67,69 @@
       "code cleanup"
     ],
     "content": "I'd like to clean up our SVG icon usage across the codebase.\nCurrently, SVGs are often inlined within components or grouped into large shared files, making them hard to reuse and maintain. My goal is to establish a structure where each icon lives in its own dedicated file.\n\n## What I’d like you to do\n- Scan the codebase for SVG usage:\n    - Inline `<svg>` elements inside React components.\n    - Any shared SVG files that contain multiple icons.\n- Refactor to \"one icon = one file\" principle:\n    - Create a dedicated folder, for example: `src/icons/`\n    - For each logical icon, create a separate file, e.g.:\n        - `IconAdd.tsx` or `icon-add.svg`\n        - `IconEdit.tsx` or `icon-edit.svg`\n        - `IconTrash.tsx` or `icon-trash.svg`\n    - Each file should contain only that single icon (no icon packs in one file).\n- Update all usages:\n    - Replace inline SVGs or references to old combined files with imports from the new per-icon files.\n    - Example (if using React components):\n        ```typescript\n        import { IconAdd } from \"@/icons/IconAdd\";\n        // ...\n        <IconAdd />\n        ```\n\n## Constraints / preferences\n- Ensure no visual changes to the icons; they must look exactly the same.\n- Keep naming consistent and predictable (e.g., `IconName` for components or `icon-name.svg` for raw SVG files).\n- Avoid creating new \"mega\" icon files; strictly adhere to the one-icon-per-file pattern.\n\nLet’s start with the most commonly used icons first, get the pattern right, and then migrate the rest.",
-    "createdAt": "2025-11-13T05:20:08.590Z",
-    "updatedAt": "2025-11-13T05:20:08.590Z",
+    "createdAt": "2025-11-13T08:17:38.156Z",
+    "updatedAt": "2025-11-13T08:17:38.156Z",
     "id": 2
+  },
+  {
+    "title": "AI Analysis Workflow Logic & Robustness Review",
+    "category": "Software Engineering",
+    "tags": [
+      "Robustness",
+      "Error Handling",
+      "Edge Cases",
+      "LLM Integration",
+      "System Design"
+    ],
+    "content": "I'd like to initiate a logic and robustness review for the agent analysis pipeline.\nMy goal is to get a second pair of eyes on the entire workflow, not just to fix a specific error, but to identify hidden logic issues, edge cases, or design concerns that could become problems later.\n\n## What I’d like you to do\n\n-   Walk through the end-to-end flow:\n    -   AI generates an analysis plan\n    -   Plan gets normalized / validated\n    -   Aggregation runs in the browser\n    -   Chart/card config is built\n    -   Card is rendered + errors/fallbacks are handled\n-   Check for fragile assumptions in the current logic, for example:\n    -   Over-trusting LLM output (e.g., missing title, missing groupByColumn, invalid aggregation, bad column names)\n    -   Calling `.map` / `.toLowerCase` / etc. on unexpected types\n    -   A single bad plan breaking the whole goal run instead of being isolated\n-   Review the error handling & fallback behavior:\n    -   Are errors caught at the right boundary (per plan, not for the whole batch)?\n    -   When validation fails, is the plan always either:\n        -   Cleanly skipped, or\n        -   Converted to a safe fallback (e.g., diagnostic / data-health card),\n        -   Instead of throwing runtime errors?\n    -   Are error messages clear enough for debugging (dev logs) and for the user (UI)?\n-   Look for logic bugs or weird edge cases, for example:\n    -   Combo charts with half-missing fields not downgraded to simple charts\n    -   Plans that pass validation but use non-existent columns\n    -   Any path where \"no cards at all\" are shown for a goal when useful output should be possible\n-   Suggest improvements to make it more robust and easier to maintain:\n    -   Simplify branching / conditions\n    -   Improve separation of responsibilities (validation vs execution vs fallback)\n    -   Small refactors for clearer control flow and easier testing\n\n## Constraints / preferences\n\n-   No obvious logic bugs or “foot-guns” in the plan → validate → execute pipeline.\n-   Invalid or incomplete plans never crash the step; they are either rejected early with a clear error or converted into a safe fallback.\n-   Partial success works reliably: if some plans are bad and some are good, the user still gets useful cards.\n-   The code should be a bit easier to reason about after your review (fewer surprises, clearer responsibilities).\n-   If anything feels hacky, unclear, or too fragile, please call it out and suggest how we can reshuffle or tighten the logic.\n-   Prefer over-fixing now to avoid chasing random edge-case bugs later.\n\nLet’s start with the most important parts first, get the pattern right, and then we can iterate.",
+    "createdAt": "2025-11-13T08:21:05.429Z",
+    "updatedAt": "2025-11-13T08:23:22.124Z",
+    "id": 3
+  },
+  {
+    "title": "Engineering-Driven UX Product Analysis",
+    "category": "Product Analysis",
+    "tags": [
+      "User Experience",
+      "Code Review",
+      "Product Analysis",
+      "Error Handling",
+      "AI Interaction"
+    ],
+    "content": "I want to improve the end-user experience by combining an engineering and user perspective.\nWe need to identify areas where the current logic might lead to confusing, slow, or fragile interactions for users, not just address implementation issues.\n\n## What I’d like you to do\n\n- First, use the product:\n  - Upload a CSV.\n  - Watch the agent run (card creation, errors, loading states, AI thoughts).\n  - Note moments that feel confusing, slow, or fragile for the user.\n- Then, review the code:\n  - Focus on `analysisOrchestrator`, `planExecutor`, `planValidator`, `actionHandler`.\n  - Check if the logic matches user expectations:\n    - Does the user get a useful fallback when something fails?\n    - Are error messages and loading states clear enough?\n    - Does AI behavior (planning, retry, partial success) feel predictable?\n- Finally, provide a list of user-centric improvement suggestions.\n\n## Constraints / preferences\n\n- Focus on an engineering view combined with a user experience perspective.\n- You don’t need to redesign the entire UX.\n- For each suggestion, include:\n  - What the user currently experiences.\n  - Recommended change (logic or UX).\n  - Impact on the end user (clarity, trust, speed, less confusion).\n  - Rough effort (S/M/L).\n- Highlight areas with fragile logic that might block users.\n- Suggest places where adding fallbacks, guards, loading states, or hints could significantly improve the experience.\n\nLet’s start with the most important parts first, get the pattern right, and then we can iterate.",
+    "createdAt": "2025-11-13T08:32:04.877Z",
+    "updatedAt": "2025-11-13T08:33:28.647Z",
+    "id": 4
+  },
+  {
+    "title": "AI Agent Pipeline Robustness and Logic Review",
+    "category": "AI/ML Engineering",
+    "tags": [
+      "AI Pipeline",
+      "Robustness",
+      "Error Handling",
+      "System Design",
+      "Debugging"
+    ],
+    "content": "I’d like to initiate a logic and robustness review for our AI analysis workflow/agent pipeline. The goal is to get a second pair of eyes on the whole workflow so we can catch hidden logic issues, edge cases, and design risks early.\n\nThe pipeline currently takes user input, generates a plan with an LLM, executes steps/tools, and aggregates results. While it mostly works, we experience intermittent errors, and I’m not fully confident in the control flow, validation, and error handling, especially for edge cases and partial failures.\n\n## What I’d like you to do\n\n-   Identify core entry points and modules (e.g., orchestrator, topic processor, plan validation, card aggregation, error handling).\n-   Map the end-to-end flow from request input to planning, execution, aggregation, and response, including LLM/tool call chaining.\n-   Review assumptions and validation around inputs (user params, schema, plan structure, tool outputs) and note where data is overly trusted.\n-   Check how errors are isolated (per topic/step vs. entire run) and where a single failure can break the pipeline.\n-   Look for edge cases: empty datasets, \"no cards\" scenarios, invalid plan shapes, downgraded chart types, missing columns, timeouts, partial tool failures.\n-   Highlight any mixed business logic, LLM logic, and UI concerns that could be better separated.\n-   Propose concrete refactors to simplify control flow (smaller functions, clearer responsibilities, fewer flags/branches).\n-   Add or improve defensive checks and logging for easier debugging (especially for LLM responses, plan validation, and aggregation).\n-   Design a simple, consistent debugging approach using console logs (and/or a small in-app debug panel), ensuring:\n    -   Each request/run has a clear identifier.\n    -   Key steps (planning, execution, aggregation, errors) emit structured logs.\n    -   It’s easy to see where a run failed or degraded when testing in the browser.\n-   After your changes, outline how we should manually test the main flows (I’ll handle testing), including scenarios to try and what to watch for in console logs.\n\n## Constraints / preferences\n\n-   Priority is robustness, clarity, and predictable behavior over adding new features.\n-   Keep behavior backwards-compatible from the user’s point of view unless explicitly agreed otherwise.\n-   Avoid heavy new dependencies; prefer simple refactors and clearer structure first.\n-   If you see a bigger redesign opportunity, call it out separately and suggest a phased approach.\n-   Document your findings and recommendations in a short summary to track changes, new logging usage, and known risks.\n\nLet’s start with the most important parts first, get the pattern right, and then we can iterate.",
+    "createdAt": "2025-11-13T10:24:12.211Z",
+    "updatedAt": "2025-11-13T10:46:10.361Z",
+    "id": 5
+  },
+  {
+    "title": "Code Debugging and Refactoring",
+    "category": "Code Review and Debugging",
+    "tags": [
+      "Debugging",
+      "Code Review",
+      "Refactoring",
+      "Bug Fix",
+      "Code Quality"
+    ],
+    "content": "I need your help to review and debug part of our codebase. The goal is to make the logic more robust and easier to maintain.\n\nThere is a current bug that needs to be fixed. We want to address this without introducing new hard-coded behavior, focusing on the core workflow in [FILE / MODULE NAME] to identify hidden assumptions or missing error handling.\n\n## What I’d like you to do\n- Review the current implementation.\n- Summarize the high-level logic in your own words.\n- Identify the likely source of the bug (function/module).\n- Add targeted logging (console/debug logs) around suspicious parts.\n- Fix the bug and clean up the logic.\n- Avoid hard-coded values or one-off patches.\n- Move any necessary constants/settings to a config/constants file.\n- Write a short note on:\n  - The root cause.\n  - Changes made.\n  - Any remaining risks or TODOs.\n\n## Constraints / preferences\n- Avoid hard-coded IDs, column names, or magic numbers.\n- Prefer small, well-named helper functions over long, complex ones.\n- Keep the behavior backward compatible unless explicitly agreed to change it.\n\nLet’s start with the most important parts first, get the pattern right, and then we can iterate.",
+    "createdAt": "2025-11-13T11:01:21.269Z",
+    "updatedAt": "2025-11-13T11:05:01.044Z",
+    "id": 6
   }
 ]
     </script>
